@@ -337,19 +337,6 @@ python evaluate.py \
 
 ---
 
-## 📚 Qualitative Examples
-
-AgriChat demonstrates expert-level agricultural reasoning across diverse tasks:
-
-<p align="center">
-  <img src="images/qualitative_1.png" alt="Disease Diagnosis Example" width="45%">
-  <img src="images/qualitative_2.png" alt="Crop Counting Example" width="45%">
-</p>
-
-**Left**: Zero-shot disease diagnosis — AgriChat correctly identifies Tomato Yellow Leaf Curl Virus while generalist models misdiagnose or refuse. **Right**: Precise crop counting — AgriChat returns the exact count (61 wheat heads) while baselines give vague or incorrect answers.
-
----
-
 ## 📜 Citation
 
 If you find our work useful, please cite:
