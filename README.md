@@ -27,7 +27,7 @@
 ## 🌟 Overview
 
 <p align="center">
-  <img src="images/LLavaOneVision_Chatbot.png" alt="AgriChat Conversational Examples" width="100%">
+  <img src="images/LLavaOneVision_Chatbot.png" alt="AgriChat Conversational Examples" width="200%">
 </p>
 
 **AgriChat** is a domain-specialized Multimodal Large Language Model (MLLM) designed for interactive agricultural diagnostics. Built on the [LLaVA-OneVision](https://github.com/LLaVA-VL/LLaVA-NeXT) architecture, AgriChat employs an **adaptive resolution (AnyRes) strategy** to preserve native pixel information up to **1344×1344** resolution — critical for resolving fine-grained visual features such as early-onset lesions, subtle phenotypic traits, and individual crop units. The model uses a **SigLIP-SO400M** vision encoder and a **Qwen-2-7B** language decoder, adapted to agriculture via parameter-efficient **LoRA** fine-tuning on our proposed AgriMM dataset.
