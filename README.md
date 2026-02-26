@@ -87,7 +87,11 @@ Our pipeline ensures scientific accuracy through three stages:
 
 ## 🧠 Model
 
-AgriChat is built on LLaVA-OneVision (7B) and adapted to agriculture via LoRA fine-tuning of both the vision encoder and language decoder.
+<p align="center">
+  <img src="images/LLavaOneVision_LoRA6.png" alt="AgriChat Architecture" width="85%">
+</p>
+
+AgriChat builds on the [LLaVA-OneVision](https://github.com/LLaVA-VL/LLaVA-NeXT) architecture, adapted for high-precision agricultural diagnostics. Input images are split into native-resolution local patches and a resized global thumbnail via an adaptive grid strategy, then encoded by **SigLIP-SO400M** equipped with LoRA adapters. The resulting visual tokens are projected into the language embedding space via a two-layer MLP and concatenated with text instruction tokens. The fused sequence is processed by the **Qwen-2-7B** decoder (also LoRA-adapted) to generate verifiable diagnostic responses. All pre-trained weights remain frozen — only the lightweight LoRA adapters and the projection layer are trained, enabling domain specialization on a single consumer GPU.
 
 ### Architecture
 
