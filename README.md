@@ -1,4 +1,4 @@
-# <img src="imgs/icon2.png" alt="AgriChat Icon" width="40" style="vertical-align: bottom;"> AgriChat: A Multimodal Large Language Model for Agriculture Image Understanding
+# <img src="images/icon2.png" alt="AgriChat Icon" width="40" style="vertical-align: bottom;"> AgriChat: A Multimodal Large Language Model for Agriculture Image Understanding
 
 <p align="center">
   <strong>Abderrahmene Boudiaf, Irfan Hussain, Sajid Javed</strong><br>
@@ -27,7 +27,7 @@
 ## 🌟 Overview
 
 <p align="center">
-  <img src="imgs/LLavaOneVision_Chatbot.png" alt="AgriChat Conversational Examples" width="100%">
+  <img src="images/LLavaOneVision_Chatbot.png" alt="AgriChat Conversational Examples" width="100%">
 </p>
 
 **AgriChat** is a domain-specialized Multimodal Large Language Model (MLLM) designed for interactive agricultural diagnostics. Built on the [LLaVA-OneVision](https://github.com/LLaVA-VL/LLaVA-NeXT) architecture, AgriChat employs an **adaptive resolution (AnyRes) strategy** to preserve native pixel information up to **1344×1344** resolution — critical for resolving fine-grained visual features such as early-onset lesions, subtle phenotypic traits, and individual crop units. The model uses a **SigLIP-SO400M** vision encoder and a **Qwen-2-7B** language decoder, adapted to agriculture via parameter-efficient **LoRA** fine-tuning on our proposed AgriMM dataset.
@@ -55,7 +55,7 @@ General-purpose MLLMs lack the verified domain expertise to reason reliably acro
 ## 📂 AgriMM Dataset
 
 <p align="center">
-  <img src="imgs/data_pipeline.png" alt="V2VK Synthesis Pipeline" width="80%">
+  <img src="images/data_pipeline.png" alt="V2VK Synthesis Pipeline" width="80%">
 </p>
 
 **AgriMM** consolidates **63 source datasets** into a unified benchmark of **121,425 images** and **607,125 instruction-following QA pairs**. It is the first publicly available, multi-source agricultural VQA benchmark integrating fine-grained taxonomy, counting, and web-verified knowledge.
@@ -229,8 +229,8 @@ python evaluate.py \
 AgriChat demonstrates expert-level agricultural reasoning across diverse tasks:
 
 <p align="center">
-  <img src="imgs/qualitative_1.png" alt="Disease Diagnosis Example" width="45%">
-  <img src="imgs/qualitative_2.png" alt="Crop Counting Example" width="45%">
+  <img src="images/qualitative_1.png" alt="Disease Diagnosis Example" width="45%">
+  <img src="images/qualitative_2.png" alt="Crop Counting Example" width="45%">
 </p>
 
 **Left**: Zero-shot disease diagnosis — AgriChat correctly identifies Tomato Yellow Leaf Curl Virus while generalist models misdiagnose or refuse. **Right**: Precise crop counting — AgriChat returns the exact count (61 wheat heads) while baselines give vague or incorrect answers.
