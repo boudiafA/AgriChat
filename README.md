@@ -18,8 +18,8 @@
 
 ## 📢 Latest Updates
 
-- **[Date]**: Agri-OneVision paper released on arXiv
-- **[Date]**: Code, AgriVQA-600K dataset, and pretrained checkpoints are now available!
+- **[26-2-2026]**: AgriChat paper submitted to COMPAG
+
 
 ---
 
