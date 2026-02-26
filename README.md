@@ -160,6 +160,144 @@ export PYTHONPATH="./:$PYTHONPATH"
 
 ---
 
+## 🛠️ Scripts
+
+The `scripts/` directory contains all tools for fine-tuning, inference, evaluation, and interactive deployment of AgriChat.
+
+### `finetune_AgriChat_lora.py` — LoRA Fine-Tuning
+
+Fine-tunes `llava-onevision-qwen2-7b-ov-hf` using LoRA adapters applied simultaneously to the SigLIP vision encoder (rank 32) and the Qwen2 LLM backbone (rank 128). Only assistant turns are supervised; user turns are masked with `-100`. Supports automatic resumption from the latest checkpoint.
+
+**Key configuration options** (editable in the `CONFIG` section of the script):
+
+| Parameter | Description |
+|-----------|-------------|
+| `MODEL_ID` | HuggingFace model identifier |
+| `DATA_ROOT` | Root directory containing JSONL dataset files |
+| `IMAGE_ROOT` | Root directory containing image files |
+| `OUTPUT_DIR` | Directory for checkpoints and final adapter |
+| `LORA_RANK` / `LORA_ALPHA` | LoRA rank/alpha for the LLM backbone |
+| `LORA_RANK_VISION` / `LORA_ALPHA_VISION` | LoRA rank/alpha for the vision encoder |
+
+**Usage:**
+```bash
+# Single GPU
+python scripts/finetune_AgriChat_lora.py
+
+# Multi-GPU
+torchrun --nproc_per_node=<N_GPUS> scripts/finetune_AgriChat_lora.py
+```
+
+---
+
+### `inference_AgriChat_lora.py` — Single-Image Inference
+
+Loads the base LLaVA-OneVision model with a trained LoRA adapter and runs single-image inference given an image path and a text prompt.
+
+**Usage:**
+```bash
+python scripts/inference_AgriChat_lora.py \
+    --image  path/to/image.jpg \
+    --prompt "What disease is affecting this crop?" \
+    --adapter ./finetune_output/final_adapter
+```
+
+**CLI Arguments:**
+
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `--image` | Path to the input image | required |
+| `--prompt` | Text question to ask about the image | required |
+| `--adapter` | Path to the saved LoRA adapter directory | `./finetune_output/final_adapter` |
+| `--base-model` | HuggingFace base model ID | `llava-hf/llava-onevision-qwen2-7b-ov-hf` |
+| `--max-tokens` | Maximum new tokens to generate | `512` |
+| `--device` | Device: `cuda`, `cpu`, or `auto` | `auto` |
+
+---
+
+### `chatbot_AgriChat_lora.py` — Interactive Gradio Chatbot
+
+Launches a web-based multi-turn chatbot with optional image uploads. The model is loaded once at startup in 4-bit NF4 quantization to minimise GPU memory usage. Generation parameters (temperature, top-p, top-k, repetition penalty) are adjustable via the UI.
+
+**Usage:**
+```bash
+python scripts/chatbot_AgriChat_lora.py
+# Then open http://localhost:7860
+```
+
+**Key configuration constants** (editable at the top of the script):
+
+| Constant | Description |
+|----------|-------------|
+| `BASE_MODEL_ID` | HuggingFace model ID for the base model |
+| `ADAPTER_PATH` | Path to the saved LoRA adapter directory |
+| `SERVER_PORT` | Port to serve the Gradio app (default: `7860`) |
+| `SHARE` | Set to `True` to generate a public Gradio share link |
+
+---
+
+### `nlg_evaluator.py` — NLG Evaluation Suite
+
+Evaluates model text outputs against ground-truth reference answers using a comprehensive set of lexical and semantic NLG metrics. Aligns predictions and references by matching the first image path in each sample's `"images"` field.
+
+**Metrics computed:**
+
+| Category | Metrics |
+|----------|---------|
+| Lexical | BLEU-4, ROUGE-2, METEOR |
+| Semantic | BERTScore, LongCLIP Cosine, T5 Cosine, SBERT Cosine |
+
+**Usage:**
+```bash
+python scripts/nlg_evaluator.py \
+    --model_output ./outputs/model_predictions.jsonl \
+    --reference    ./data/test.jsonl \
+    --longclip_ckpt ./checkpoints/longclip-L.pt \
+    --output_json  ./results/scores.json
+```
+
+---
+
+### `llm_judge.py` — LLM-as-a-Judge Evaluator
+
+Uses **Qwen3-30B** (via vLLM) to score model outputs against ground-truth reference answers. Supports two evaluation modes detected automatically from the reference filename: **MCQ mode** (binary 0/1 scoring) and **open-ended mode** (1–4 Likert scale). Includes checkpoint support for resuming interrupted runs.
+
+**Usage:**
+```bash
+python scripts/llm_judge.py \
+    --model_output  path/to/model_predictions.jsonl \
+    --reference     path/to/ground_truth.jsonl \
+    --output        path/to/results.jsonl \
+    --chunk_size    500 \
+    --judge_model   Qwen/Qwen3-30B-A3B-Instruct-2507 \
+    --tensor_parallel_size 1
+```
+
+**CLI Arguments:**
+
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `--model_output` | Path to model predictions JSONL | required |
+| `--reference` | Path to ground-truth reference JSONL | required |
+| `--output` | Path for scored output JSONL | `judged_<input_basename>` |
+| `--chunk_size` | Prompts per vLLM batch | `500` |
+| `--judge_model` | HuggingFace model ID for the judge LLM | `Qwen/Qwen3-30B-A3B-Instruct-2507` |
+| `--tensor_parallel_size` | Number of GPUs for tensor parallelism | `1` |
+| `--max_model_len` | Max token context length | `32768` |
+
+**Expected JSONL format** (shared across all evaluation scripts):
+```json
+{
+    "images": ["path/to/image.jpg"],
+    "messages": [
+        {"role": "user",      "content": "What disease is shown?"},
+        {"role": "assistant", "content": "The image shows powdery mildew."}
+    ]
+}
+```
+
+---
+
 ## ⚙️ V2VK Data Generation Pipeline
 
 Scripts to reproduce the Vision-to-Verified-Knowledge pipeline:
