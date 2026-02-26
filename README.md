@@ -317,35 +317,6 @@ python scripts/stage3_qa_generation.py --captions ./captions.json --knowledge ./
 
 ---
 
-## 🏋️ Training
-
-AgriChat is fine-tuned in a **single stage** on the full multimodal AgriMM dataset using LoRA adapters on both the vision encoder and language decoder.
-
-```bash
-python train.py \
-  --model_name_or_path llava-onevision-7b \
-  --data_path ./AgriMM/ \
-  --output_dir ./checkpoints/agrichat-7b \
-  --num_train_epochs 1 \
-  --per_device_train_batch_size 1 \
-  --gradient_accumulation_steps 16 \
-  --learning_rate 2e-4 \
-  --bf16 True \
-  --lora_r 128 \
-  --lora_alpha 256 \
-  --vision_lora_r 32 \
-  --vision_lora_alpha 64
-```
-
-**Training Details:**
-- **Hardware**: Single NVIDIA RTX 3090 (24GB VRAM)
-- **Precision**: bfloat16 mixed precision
-- **Effective batch size**: 16 (1 × 16 gradient accumulation)
-- **Epochs**: 1
-- **Strategy**: Single-stage (outperforms two-stage curriculum; see ablation in paper)
-
----
-
 ## 📊 Evaluation
 
 We employ a multi-faceted evaluation framework combining lexical, semantic, and LLM-based metrics:
