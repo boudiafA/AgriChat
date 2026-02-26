@@ -20,7 +20,7 @@
 ## 📢 Latest Updates
 
 - **[2026-02-26]**: AgriChat paper submitted to *Computers and Electronics in Agriculture*
-- **[2026-02-26]**: Repository, dataset, and code released
+- **[2026-02-25]**: Repository created
 
 ---
 
