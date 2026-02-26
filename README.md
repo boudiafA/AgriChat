@@ -1,167 +1,239 @@
-# <img src="imgs/icon2.png" alt="Agri-OneVision Icon" width="40" style="vertical-align: bottom;"> Agri-OneVision: High-Resolution Agricultural Vision-Language Model
+# <img src="imgs/icon2.png" alt="AgriChat Icon" width="40" style="vertical-align: bottom;"> AgriChat: A Multimodal Large Language Model for Agriculture Image Understanding
 
 <p align="center">
-  <strong>Abderrahmene Boudiaf, Irfan Hussain, Sajid Javed</strong>
+  <strong>Abderrahmene Boudiaf, Irfan Hussain, Sajid Javed</strong><br>
+  Department of Computer Science, Khalifa University of Science and Technology, Abu Dhabi, UAE
 </p>
 
 <p align="center">
-  A specialized Multimodal Large Language Model (MLLM) for fine-grained plant pathology, species identification, and crop counting.
+  A specialized Multimodal Large Language Model (MLLM) for fine-grained plant species identification, plant disease diagnosis, and crop counting.
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/Online-Demo-red" alt="Demo"></a>
   <a href="#"><img src="https://img.shields.io/badge/arXiv-Paper-b31b1b.svg" alt="Paper"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Dataset-AgriVQA--600K-87CEEB" alt="Dataset"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Dataset-AgriMM-87CEEB" alt="Dataset"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Model-AgriChat--7B-green" alt="Model"></a>
 </p>
 
 ---
 
 ## 📢 Latest Updates
 
-- **[26-2-2026]**: AgriChat paper submitted to COMPAG
-
+- **[2026-02-26]**: AgriChat paper submitted to *Computers and Electronics in Agriculture*
+- **[2026-02-26]**: Repository, dataset, and code released
 
 ---
 
 ## 🌟 Overview
 
 <p align="center">
-  <img src="imgs/LLavaOneVision_Chatbot.png" alt="Agri-OneVision Architecture" width="100%">
+  <img src="imgs/LLavaOneVision_Chatbot.png" alt="AgriChat Conversational Examples" width="100%">
 </p>
 
-**Agri-OneVision** is a specialized LLaVA-OneVision framework designed for agricultural visual diagnostics. Unlike general-purpose models that downsample images (destroying high-frequency details needed for disease detection), our model employs an **AnyRes strategy** to preserve native pixel information up to **1344×1344** resolution. It is powered by a **SigLIP-SO400M** vision encoder and a **Qwen-2-7B** language decoder, fine-tuned via QLoRA.
+**AgriChat** is a domain-specialized Multimodal Large Language Model (MLLM) designed for interactive agricultural diagnostics. Built on the [LLaVA-OneVision](https://github.com/LLaVA-VL/LLaVA-NeXT) architecture, AgriChat employs an **adaptive resolution (AnyRes) strategy** to preserve native pixel information up to **1344×1344** resolution — critical for resolving fine-grained visual features such as early-onset lesions, subtle phenotypic traits, and individual crop units. The model uses a **SigLIP-SO400M** vision encoder and a **Qwen-2-7B** language decoder, adapted to agriculture via parameter-efficient **LoRA** fine-tuning on our proposed AgriMM dataset.
+
+### Why AgriChat?
+
+General-purpose MLLMs lack the verified domain expertise to reason reliably across diverse plant taxonomies. AgriChat addresses this by:
+
+- Training on **607,125 VQA pairs** grounded in verified phytopathological literature (not hallucinated by frozen LLMs)
+- Covering **3,000+ agricultural classes** — the widest taxonomic diversity of any agricultural MLLM to date
+- Running in **~2.3 seconds** on consumer-grade hardware (RTX 3090), enabling real-time field deployment
 
 ---
 
 ## 🏆 Key Contributions
 
-1. **AgriVQA-600K Dataset**: We introduce the most taxonomically diverse agricultural VQA benchmark, aggregating 63 datasets to cover **3,000+ classes**, including fine-grained species ID, crop counting, and disease classification.
+1. **AgriMM Dataset**: The largest publicly available agricultural VQA benchmark — **121,425 images** and **607,125 QA pairs** spanning **3,099 classes** across **63 source datasets**, covering fine-grained species identification, disease diagnosis, and crop counting.
 
-2. **Vision-to-Verified-Knowledge Pipeline**: We introduce a novel 3-stage synthesis pipeline using RAG (Retrieval-Augmented Generation). By grounding visual captions in web-retrieved scientific knowledge, we eliminate biological hallucinations in training data.
+2. **Vision-to-Verified-Knowledge (V2VK) Pipeline**: A novel 3-stage data synthesis framework that integrates visual captioning with web-augmented scientific retrieval, eliminating biological hallucinations by grounding training data in verified literature.
 
-3. **Agri-OneVision Architecture**: We propose a high-resolution architecture capable of resolving millimeter-scale features (e.g., early fungal infections or pest eggs) that are typically lost by standard VLM preprocessing.
+3. **AgriChat Model**: The first agricultural MLLM fine-tuned on such a broad and diverse corpus, achieving state-of-the-art performance on four agriculture benchmarks and demonstrating superior zero-shot generalization over larger open-source generalist models.
 
 ---
 
-## 📂 AgriVQA-600K Dataset
+## 📂 AgriMM Dataset
 
 <p align="center">
-  <img src="imgs/data_pipeline.png" alt="Synthesis Pipeline" width="80%">
+  <img src="imgs/data_pipeline.png" alt="V2VK Synthesis Pipeline" width="80%">
 </p>
 
-We constructed **AgriVQA-600K**, comprising **121,425 images** and **607,125 instruction-following pairs**. The dataset is built systematically across three categories:
+**AgriMM** consolidates **63 source datasets** into a unified benchmark of **121,425 images** and **607,125 instruction-following QA pairs**. It is the first publicly available, multi-source agricultural VQA benchmark integrating fine-grained taxonomy, counting, and web-verified knowledge.
 
-### Dataset Categories
+### Dataset Components
 
-- **Fine-Grained Species Classification**: Derived from iNatAg, covering 2,959 plant species with rich morphological descriptions.
+| Component | Images | Classes | Description |
+|-----------|--------|---------|-------------|
+| Fine-Grained Identification | 48,580 | 2,956 species | Sourced from iNatAg; 9 taxonomic categories |
+| Disease Classification | 49,348 | 110 diseases | 29 datasets across 33 major crops |
+| Crop Counting & Detection | 23,497 | 33 crops | 33 detection datasets with bounding-box-derived counts |
 
-- **Crop Counting**: Aggregated from 33 detection datasets (e.g., wheat heads, apples, pods) to enable precise quantitative reasoning.
+### Vision-to-Verified-Knowledge (V2VK) Pipeline
 
-- **Disease Classification**: The largest component, covering 110 distinct pathological classes across 29 datasets, including "Healthy" baselines often omitted in other benchmarks.
+Our pipeline ensures scientific accuracy through three stages:
 
-### Vision-to-Verified-Knowledge Pipeline
-
-Our pipeline ensures factuality through three stages:
-
-1. **Visual Grounding**: Image captioning via Gemini 3 8B
-2. **Knowledge Retrieval**: Web-search via Gemini 3 Pro to fetch up-to-date botanical data
-3. **Instruction Generation**: LLaMA 3.1 8B creates diverse QA pairs grounded in retrieved knowledge
+1. **Stage I — Visual Grounding**: Gemma 3 (8B) generates structured image captions conditioned on ground-truth labels, extracting growth stage, planting density, and environmental context.
+2. **Stage II — Knowledge Retrieval**: Gemini 3 Pro with web-search retrieves verified botanical descriptions, disease etiology, and management protocols from authoritative sources.
+3. **Stage III — Instruction Synthesis**: LLaMA 3.1-8B-Instruct synthesizes both the visual caption and retrieved knowledge into 5 diverse QA pairs per image (Identification, Visual Reasoning, Health Condition, Cultivation Knowledge, Quantification).
 
 ### 📥 Download
 
-Access AgriVQA-600K: **Coming Soon**
+| Resource | Link |
+|----------|------|
+| AgriMM Dataset | **Coming Soon** |
+| Source Dataset List | See [Appendix A](/) in the paper |
 
 ---
 
-## 🧠 Model Zoo
+## 🧠 Model
 
-We release the following checkpoints based on the Qwen-2-7B architecture, trained with our specialized high-resolution strategy.
+AgriChat is built on LLaVA-OneVision (7B) and adapted to agriculture via LoRA fine-tuning of both the vision encoder and language decoder.
 
-| Model Name | Base Model | Resolution Strategy | Link |
-|------------|------------|---------------------|------|
-| Agri-OneVision-7B | Qwen-2-7B | AnyRes (Grid) | **Coming Soon** |
+### Architecture
+
+| Component | Model | Details |
+|-----------|-------|---------|
+| Vision Encoder | SigLIP-SO400M | 384×384 native tile resolution, LoRA rank=32, α=64 |
+| Cross-Modal Projector | 2-layer MLP | Projects d_v=1152 → d_llm=3584 |
+| Language Decoder | Qwen-2-7B | LoRA rank=128, α=256 |
+| Max Resolution | 1344×1344 | Via adaptive grid (up to 12 tiles) |
+
+### Performance Summary
+
+AgriChat vs. state-of-the-art generalist baselines (METEOR / LLM Judge scores):
+
+| Benchmark | LLaVA-OneVision (7B) | Llama-3.2 (11B) | Qwen-2.5 (7B) | **AgriChat (7B)** |
+|-----------|---------------------|-----------------|---------------|-------------------|
+| AgriMM | 37.89 / 55.12 | 32.43 / 57.18 | 29.11 / 65.77 | **66.70 / 77.43** |
+| PlantVillageVQA | 17.25 / 57.41 | 6.72 / 54.44 | 3.43 / 53.21 | **19.52 / 74.26** |
+| CDDM (Diagnosis) | 17.17 / 55.53 | 18.63 / 53.03 | 18.11 / 59.51 | **39.59 / 69.94** |
+| AGMMU (MCQs) | 8.88 / — | 28.06 / — | 31.70 / — | **63.87 / —** |
+
+### Inference
+
+| Metric | Value |
+|--------|-------|
+| Avg. Inference Time | 2.315 seconds |
+| Memory (4-bit quantized) | 10.71–12.32 GB |
+| Throughput | ~1,555 queries/hour |
+| Hardware | NVIDIA RTX 3090 (24GB) |
+
+### 📥 Download
+
+| Model | Base | Link |
+|-------|------|------|
+| AgriChat-7B | LLaVA-OneVision / Qwen-2-7B | **Coming Soon** (released upon publication) |
 
 ---
 
 ## 🔧 Installation
 
-We recommend setting up a clean conda environment to run Agri-OneVision.
-
-### Step 1: Create and Activate the Conda Environment
+### Step 1: Create Conda Environment
 ```bash
-conda create -n llava_env python=3.10 -y
-conda activate llava_env
+conda create -n agrichat python=3.10 -y
+conda activate agrichat
 ```
 
 ### Step 2: Install PyTorch with CUDA Support
-
-For most modern GPUs (CUDA 12.1):
 ```bash
+# For CUDA 12.1
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# For CUDA 11.8, use cu118 instead
 ```
 
-> **Note**: If you are on an older system with CUDA 11.8, use `cu118` instead of `cu121`
-
-### Step 3: Install Required Libraries
+### Step 3: Install Dependencies
 ```bash
-pip install --upgrade transformers accelerate bitsandbytes pillow requests protobuf
-```
-
-**For Windows Users**: If `bitsandbytes` fails to import, install the Windows-specific version:
-```bash
-pip install https://github.com/jllllll/bitsandbytes-windows-webui/releases/download/wheels/bitsandbytes-0.41.1-py3-none-win_amd64.whl
+pip install --upgrade transformers accelerate bitsandbytes pillow requests protobuf peft
 ```
 
 ### Step 4: Clone Repository
 ```bash
-git clone https://github.com/username/Agri-OneVision
-cd Agri-OneVision
+git clone https://github.com/boudiafA/AgriChat.git
+cd AgriChat
 export PYTHONPATH="./:$PYTHONPATH"
 ```
 
 ---
 
-## ⚙️ Data Generation Pipeline
+## ⚙️ V2VK Data Generation Pipeline
 
-Scripts to reproduce the Vision-to-Verified-Knowledge pipeline (Visual Captioning → Web RAG → QA Generation).
+Scripts to reproduce the Vision-to-Verified-Knowledge pipeline:
+
 ```bash
-# Coming soon
+# Stage I: Visual Grounding (Image Captioning via Gemma 3)
+python scripts/stage1_captioning.py --data_dir ./AgriMM/images --output ./captions.json
+
+# Stage II: Knowledge Retrieval (Web-RAG via Gemini 3 Pro)
+python scripts/stage2_knowledge.py --classes ./AgriMM/classes.json --output ./knowledge.json
+
+# Stage III: Instruction Synthesis (QA Generation via LLaMA 3.1)
+python scripts/stage3_qa_generation.py --captions ./captions.json --knowledge ./knowledge.json --output ./AgriMM_QA.json
 ```
+
+> See [Appendix B](/) in the paper for the exact prompt templates used in each stage.
 
 ---
 
 ## 🏋️ Training
 
-We utilize a 3-stage curriculum learning pipeline (Alignment → Foundational Knowledge → Domain Specialization) using QLoRA on a single NVIDIA H200 GPU.
+AgriChat is fine-tuned in a **single stage** on the full multimodal AgriMM dataset using LoRA adapters on both the vision encoder and language decoder.
+
 ```bash
-# Example training command
-sh scripts/train_agri_onevision.sh --data_path ./AgriVQA-600K --output_dir ./checkpoints
+python train.py \
+  --model_name_or_path llava-onevision-7b \
+  --data_path ./AgriMM/ \
+  --output_dir ./checkpoints/agrichat-7b \
+  --num_train_epochs 1 \
+  --per_device_train_batch_size 1 \
+  --gradient_accumulation_steps 16 \
+  --learning_rate 2e-4 \
+  --bf16 True \
+  --lora_r 128 \
+  --lora_alpha 256 \
+  --vision_lora_r 32 \
+  --vision_lora_alpha 64
 ```
+
+**Training Details:**
+- **Hardware**: Single NVIDIA RTX 3090 (24GB VRAM)
+- **Precision**: bfloat16 mixed precision
+- **Effective batch size**: 16 (1 × 16 gradient accumulation)
+- **Epochs**: 1
+- **Strategy**: Single-stage (outperforms two-stage curriculum; see ablation in paper)
 
 ---
 
-## 📊 Evaluation and Metrics
+## 📊 Evaluation
 
-Evaluating agricultural diagnostics requires more than lexical overlap. We employ a multi-faceted evaluation framework:
+We employ a multi-faceted evaluation framework combining lexical, semantic, and LLM-based metrics:
 
-- **Lexical Metrics**: BLEU-4, ROUGE-L, CIDEr
-- **Semantic Metrics**: BERTScore, SBERT, and Long-CLIP similarity to measure embedding alignment
-- **LLM-as-a-Judge**: We use DeepSeek-R1-Distill-Llama-70B with a strict prompt to penalize verbosity and "length-hacking," ensuring the model is rewarded for accuracy and diagnostic reasoning rather than fluff
+| Category | Metrics |
+|----------|---------|
+| Lexical | BLEU-4, ROUGE-2, METEOR |
+| Semantic | BERTScore, LongCLIP, T5 Cosine, SBERT |
+| LLM-as-a-Judge | Qwen3-30B-A3B-Instruct (4-point Likert scale) |
 
-<p align="center">
-  <img src="imgs/evaluation_results.png" alt="Evaluation Results" width="80%">
-</p>
+```bash
+# Run evaluation on a benchmark
+python evaluate.py \
+  --model_path ./checkpoints/agrichat-7b \
+  --benchmark agrimm \
+  --output_dir ./results/
+```
 
 ---
 
 ## 📚 Qualitative Examples
 
-AgriChat demonstrates superior performance in identifying subtle disease features and performing accurate crop counts compared to general-purpose VLMs.
+AgriChat demonstrates expert-level agricultural reasoning across diverse tasks:
 
 <p align="center">
   <img src="imgs/qualitative_1.png" alt="Disease Diagnosis Example" width="45%">
   <img src="imgs/qualitative_2.png" alt="Crop Counting Example" width="45%">
 </p>
+
+**Left**: Zero-shot disease diagnosis — AgriChat correctly identifies Tomato Yellow Leaf Curl Virus while generalist models misdiagnose or refuse. **Right**: Precise crop counting — AgriChat returns the exact count (61 wheat heads) while baselines give vague or incorrect answers.
 
 ---
 
@@ -169,11 +241,11 @@ AgriChat demonstrates superior performance in identifying subtle disease feature
 
 If you find our work useful, please cite:
 ```bibtex
-@article{AgriOneVision2025,
-  title   = {Agri-OneVision: High-Resolution Vision-Language Model for Agricultural Diagnostics},
-  author  = {[Author List Placeholder]},
-  journal = {arXiv preprint},
-  year    = {2025}
+@article{boudiaf2026agrichat,
+  title     = {AgriChat: A Multimodal Large Language Model for Agriculture Image Understanding},
+  author    = {Boudiaf, Abderrahmene and Hussain, Irfan and Javed, Sajid},
+  journal   = {Submitted to Computers and Electronics in Agriculture},
+  year      = {2026}
 }
 ```
 
@@ -181,12 +253,14 @@ If you find our work useful, please cite:
 
 ## 📄 License
 
-[Add your license information here]
+This project is released under the [Apache 2.0 License](LICENSE).
+
+The AgriMM dataset is released for **research purposes only**. Individual source datasets retain their original licenses — see [Appendix A](/) for the complete source list.
 
 ## 🙏 Acknowledgments
 
-[Add acknowledgments here]
+This work was supported by Khalifa University of Science and Technology, Abu Dhabi, UAE. We thank the creators of the 63 source datasets that make AgriMM possible.
 
 ## 📧 Contact
 
-For questions or collaborations, please contact: [your-email@example.com]
+For questions or collaborations, please contact: **100058322@ku.ac.ae** (Abderrahmene Boudiaf)
