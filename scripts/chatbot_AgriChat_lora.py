@@ -22,8 +22,8 @@ USAGE
 CONFIGURATION (edit constants below)
 --------------------------------------
   BASE_MODEL_ID   : HuggingFace model ID for the base model.
-  ADAPTER_PATH    : Path to the saved LoRA adapter directory produced by
-                    finetune_AgriChat_lora.py.
+  AGRICHAT_WEIGHTS_PATH
+                  : Path to the released AgriChat LoRA weights directory.
   SERVER_PORT     : Port to serve the Gradio app on (default: 7860).
   SHARE           : Set to True to generate a public Gradio share link.
 
@@ -61,7 +61,7 @@ from peft import PeftModel
 # ============================================================
 
 BASE_MODEL_ID = "llava-hf/llava-onevision-qwen2-7b-ov-hf"
-ADAPTER_PATH  = "./models/AgriChat_128_32"
+AGRICHAT_WEIGHTS_PATH = "./weights/AgriChat"
 MAX_NEW_TOKENS = 512
 SERVER_PORT    = 7860
 SHARE          = False
@@ -110,8 +110,8 @@ def _load_model_and_processor():
     )
 
     # ---- LoRA adapter ----
-    print(f"[3/3] Loading LoRA adapter from: {ADAPTER_PATH}")
-    model = PeftModel.from_pretrained(base_model, ADAPTER_PATH)
+    print(f"[3/3] Loading AgriChat weights from: {AGRICHAT_WEIGHTS_PATH}")
+    model = PeftModel.from_pretrained(base_model, AGRICHAT_WEIGHTS_PATH)
     model.eval()
 
     print("\n✓ Model ready.\n")
@@ -154,9 +154,43 @@ def _parse_history(history: list) -> list:
             if role and content:
                 conversation.append({
                     "role": role,
-                    "content": [{"type": "text", "text": str(content)}],
+                    "content": _normalize_content_blocks(content),
                 })
     return conversation
+
+
+def _normalize_content_blocks(content) -> list:
+    """Convert Gradio history content into chat-template blocks."""
+    if isinstance(content, str):
+        return [{"type": "text", "text": content}]
+
+    if isinstance(content, dict):
+        blocks = []
+        text = content.get("text", "")
+        files = content.get("files", [])
+        for file_path in files:
+            try:
+                Image.open(file_path).close()
+                blocks.append({"type": "image"})
+            except Exception:
+                continue
+        if text:
+            blocks.append({"type": "text", "text": str(text)})
+        return blocks or [{"type": "text", "text": str(content)}]
+
+    if isinstance(content, list):
+        blocks = []
+        for item in content:
+            if isinstance(item, dict) and item.get("type") in {"text", "image"}:
+                if item["type"] == "text":
+                    blocks.append({"type": "text", "text": str(item.get("text", ""))})
+                else:
+                    blocks.append({"type": "image"})
+            elif isinstance(item, str):
+                blocks.append({"type": "text", "text": item})
+        return blocks or [{"type": "text", "text": str(content)}]
+
+    return [{"type": "text", "text": str(content)}]
 
 
 def bot(

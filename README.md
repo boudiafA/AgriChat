@@ -72,8 +72,8 @@ General-purpose MLLMs lack the verified domain expertise to reason reliably acro
 
 Our pipeline ensures scientific accuracy through three stages:
 
-1. **Stage I — Visual Grounding**: Gemma 3 (8B) generates structured image captions conditioned on ground-truth labels, extracting growth stage, planting density, and environmental context.
-2. **Stage II — Knowledge Retrieval**: Gemini 3 Pro with web-search retrieves verified botanical descriptions, disease etiology, and management protocols from authoritative sources.
+1. **Stage I — Visual Grounding**: Gemma 3 (12B) generates structured image captions directly from the image input, extracting growth stage, planting density, and environmental context without relying on label-conditioned prompts.
+2. **Stage II — Knowledge Retrieval**: Gemini 3 Pro with Google Search grounding retrieves verified botanical descriptions, disease etiology, and management protocols from authoritative sources.
 3. **Stage III — Instruction Synthesis**: LLaMA 3.1-8B-Instruct synthesizes both the visual caption and retrieved knowledge into 5 diverse QA pairs per image (Identification, Visual Reasoning, Health Condition, Cultivation Knowledge, Quantification).
 
 ### 📥 Download
@@ -81,7 +81,7 @@ Our pipeline ensures scientific accuracy through three stages:
 | Resource | Link |
 |----------|------|
 | AgriMM Dataset | **Coming Soon** |
-| Source Dataset List | See [Appendix A](/) in the paper |
+| Source Dataset List | See Appendix A in the paper |
 
 ---
 
@@ -126,37 +126,89 @@ AgriChat vs. state-of-the-art generalist baselines (METEOR / LLM Judge scores):
 
 | Model | Base | Link |
 |-------|------|------|
-| AgriChat-7B | LLaVA-OneVision / Qwen-2-7B | **Coming Soon** (released upon publication) |
+| AgriChat-7B | LLaVA-OneVision / Qwen-2-7B | **Coming Soon** ([Model Weights Placeholder](#)) |
 
 ---
 
 ## 🔧 Installation
 
-### Step 1: Create Conda Environment
+We recommend using **two conda environments**:
+
+- `agrichat-core` for auto-annotation, fine-tuning, inference, chatbot, and `nlg_evaluator.py`
+- `agrichat-judge` for `llm_judge.py`, because vLLM is best installed in a fresh environment
+
+### Environment 1: `agrichat-core`
+
 ```bash
-conda create -n agrichat python=3.10 -y
-conda activate agrichat
+conda create -n agrichat-core python=3.10 -y
+conda activate agrichat-core
+
+# PyTorch with CUDA 12.1
+pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu121
+
+# If you need CUDA 11.8 instead, use:
+# pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu118
+
+pip install --upgrade \
+    transformers accelerate bitsandbytes pillow requests protobuf peft \
+    google-genai gradio tqdm \
+    nltk rouge-score bert-score sentence-transformers scipy scikit-learn
 ```
 
-### Step 2: Install PyTorch with CUDA Support
+Optional for training:
 ```bash
-# For CUDA 12.1
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-
-# For CUDA 11.8, use cu118 instead
+# The fine-tuning script defaults to flash_attention_2.
+# Install FlashAttention if it matches your CUDA/PyTorch stack, or run training with:
+#   --attn-implementation sdpa
+pip install flash-attn --no-build-isolation
 ```
 
-### Step 3: Install Dependencies
+### Environment 2: `agrichat-judge`
+
 ```bash
-pip install --upgrade transformers accelerate bitsandbytes pillow requests protobuf peft
+conda create -n agrichat-judge python=3.10 -y
+conda activate agrichat-judge
+
+# vLLM is recommended in a fresh environment.
+pip install vllm transformers
 ```
 
-### Step 4: Clone Repository
+### Clone Repository
+
 ```bash
 git clone https://github.com/boudiafA/AgriChat.git
 cd AgriChat
 export PYTHONPATH="./:$PYTHONPATH"
 ```
+
+### Install Long-CLIP for `nlg_evaluator.py`
+
+`nlg_evaluator.py` depends on the official Long-CLIP repository and checkpoint files. Clone the repository separately and point the evaluator to it via `LONGCLIP_ROOT`.
+
+```bash
+git clone https://github.com/beichenzbc/Long-CLIP.git ../Long-CLIP
+export LONGCLIP_ROOT="$(cd ../Long-CLIP && pwd)"
+```
+
+Then place the Long-CLIP checkpoint (for example `longclip-L.pt`) under:
+
+```bash
+$LONGCLIP_ROOT/checkpoints/
+```
+
+If `LONGCLIP_ROOT` is not set, the evaluator falls back to `../Long-CLIP` relative to this repository layout.
+
+### Place AgriChat Weights
+
+Place the released AgriChat PEFT weights under:
+
+```bash
+weights/AgriChat/
+├── adapter_config.json
+└── adapter_model.safetensors
+```
+
+The repository does **not** include `adapter_model.safetensors` because the model weights are too large for a normal GitHub code release. Download the published weights from the model link above and place them in this folder. The inference and chatbot scripts default to this location.
 
 ---
 
@@ -164,42 +216,123 @@ export PYTHONPATH="./:$PYTHONPATH"
 
 The `scripts/` directory contains all tools for fine-tuning, inference, evaluation, and interactive deployment of AgriChat.
 
+### `auto_annotation_pipeline.py` — AgriMM Auto-Annotation Pipeline
+
+Implements the full **Vision-to-Verified-Knowledge (V2VK)** data generation workflow used to build AgriMM. The pipeline is intentionally modular: the public entrypoint is `auto_annotation_pipeline.py`, while the three stages live under `scripts/auto_annotation_utils/` as separate utility modules for cleaner maintenance and easier extension.
+
+**Pipeline stages:**
+
+| Stage | Utility Module | Role |
+|-------|----------------|------|
+| I | `captioning_stage.py` | Generates grounded image-only captions with Gemma 3 (12B) |
+| II | `knowledge_stage.py` | Produces class-level verified knowledge with Gemini 3 Pro + Google Search grounding |
+| III | `qa_generation_stage.py` | Synthesizes structured QA pairs with Llama 3.1 |
+
+**Expected dataset layout:**
+```text
+dataset/images/
+├── class_a/
+│   ├── image_001.jpg
+│   └── ...
+└── class_b/
+    └── ...
+```
+
+**Generated outputs:**
+
+| File | Description |
+|------|-------------|
+| `stage1_captions.jsonl` | Per-image visual captions |
+| `stage2_class_knowledge.jsonl` | Per-class knowledge records |
+| `stage3_qa_pairs.jsonl` | Final per-image QA annotations |
+
+**Usage:**
+```bash
+# Full pipeline
+python scripts/auto_annotation_pipeline.py \
+    --image-root ./dataset/images \
+    --output-dir ./auto_annotation_outputs \
+    --resume
+
+# Only knowledge retrieval and QA synthesis
+python scripts/auto_annotation_pipeline.py \
+    --image-root ./dataset/images \
+    --output-dir ./auto_annotation_outputs \
+    --stages knowledge qa \
+    --resume
+```
+
+**Key CLI arguments:**
+
+| Argument | Description |
+|----------|-------------|
+| `--image-root` | Root folder containing the dataset images |
+| `--output-dir` | Directory where stage outputs will be written |
+| `--stages` | Subset of stages to run: `captions`, `knowledge`, `qa` |
+| `--resume` | Continue from existing JSONL outputs instead of regenerating completed records |
+| `--class-names-file` | Optional text file with one class name per line for Stage II |
+| `--caption-model` | Gemma model used for Stage I captioning |
+| `--knowledge-model` | Google GenAI model used for Stage II knowledge generation |
+| `--qa-model` | Llama-style text model used for Stage III QA synthesis |
+
+**Notes:**
+- Stage I uses image input only; it does not require class labels as prompt input.
+- Stage II requires the Google GenAI SDK and a valid `GEMINI_API_KEY`.
+- The Stage II utility is configured to call Gemini 3 Pro with Google Search grounding enabled.
+- Stage I and Stage III assume GPU-backed inference for practical runtime.
+- The pipeline writes JSONL incrementally, so interrupted runs can be resumed safely.
+
+---
+
 ### `finetune_AgriChat_lora.py` — LoRA Fine-Tuning
 
-Fine-tunes `llava-onevision-qwen2-7b-ov-hf` using LoRA adapters applied simultaneously to the SigLIP vision encoder (rank 32) and the Qwen2 LLM backbone (rank 128). Only assistant turns are supervised; user turns are masked with `-100`. Supports automatic resumption from the latest checkpoint.
+Fine-tunes `llava-onevision-qwen2-7b-ov-hf` using LoRA adapters applied simultaneously to the SigLIP vision encoder (rank 32) and the Qwen2 LLM backbone (rank 128). This clean script is derived from our `run2_vision_llm_lora.py` training code in the ablation study folder. Only assistant turns are supervised; user turns are masked with `-100`. Supports automatic resumption from the latest checkpoint.
 
-**Key configuration options** (editable in the `CONFIG` section of the script):
+If FlashAttention is unavailable on your system, run the script with `--attn-implementation sdpa`.
 
-| Parameter | Description |
-|-----------|-------------|
-| `MODEL_ID` | HuggingFace model identifier |
-| `DATA_ROOT` | Root directory containing JSONL dataset files |
-| `IMAGE_ROOT` | Root directory containing image files |
-| `OUTPUT_DIR` | Directory for checkpoints and final adapter |
-| `LORA_RANK` / `LORA_ALPHA` | LoRA rank/alpha for the LLM backbone |
-| `LORA_RANK_VISION` / `LORA_ALPHA_VISION` | LoRA rank/alpha for the vision encoder |
+**Key CLI arguments**:
+
+| Argument | Description |
+|----------|-------------|
+| `--train-jsonl` | Training JSONL file |
+| `--eval-jsonl` | Optional evaluation JSONL file |
+| `--image-root` | Root directory containing image files |
+| `--output-dir` | Directory for checkpoints and logs |
+| `--agrichat-weights-dir` | Directory where the final AgriChat weights will be exported |
+| `--lora-rank` / `--lora-alpha` | LoRA rank/alpha for the LLM backbone |
+| `--vision-lora-rank` / `--vision-lora-alpha` | LoRA rank/alpha for the vision encoder |
 
 **Usage:**
 ```bash
 # Single GPU
-python scripts/finetune_AgriChat_lora.py
+python scripts/finetune_AgriChat_lora.py \
+    --train-jsonl ./data/stage2_train.jsonl \
+    --eval-jsonl ./data/stage2_test.jsonl \
+    --image-root ./dataset/images \
+    --output-dir ./finetune_output \
+    --agrichat-weights-dir ./weights/AgriChat
 
 # Multi-GPU
-torchrun --nproc_per_node=<N_GPUS> scripts/finetune_AgriChat_lora.py
+torchrun --nproc_per_node=<N_GPUS> scripts/finetune_AgriChat_lora.py \
+    --train-jsonl ./data/stage2_train.jsonl \
+    --eval-jsonl ./data/stage2_test.jsonl \
+    --image-root ./dataset/images \
+    --output-dir ./finetune_output \
+    --agrichat-weights-dir ./weights/AgriChat
 ```
 
 ---
 
 ### `inference_AgriChat_lora.py` — Single-Image Inference
 
-Loads the base LLaVA-OneVision model with a trained LoRA adapter and runs single-image inference given an image path and a text prompt.
+Loads the base LLaVA-OneVision model with the released AgriChat weights and runs single-image inference given an image path and a text prompt.
 
 **Usage:**
 ```bash
 python scripts/inference_AgriChat_lora.py \
     --image  path/to/image.jpg \
     --prompt "What disease is affecting this crop?" \
-    --adapter ./finetune_output/final_adapter
+    --agrichat-weights ./weights/AgriChat
 ```
 
 **CLI Arguments:**
@@ -208,7 +341,7 @@ python scripts/inference_AgriChat_lora.py \
 |----------|-------------|---------|
 | `--image` | Path to the input image | required |
 | `--prompt` | Text question to ask about the image | required |
-| `--adapter` | Path to the saved LoRA adapter directory | `./finetune_output/final_adapter` |
+| `--agrichat-weights` | Path to the AgriChat weights directory | `./weights/AgriChat` |
 | `--base-model` | HuggingFace base model ID | `llava-hf/llava-onevision-qwen2-7b-ov-hf` |
 | `--max-tokens` | Maximum new tokens to generate | `512` |
 | `--device` | Device: `cuda`, `cpu`, or `auto` | `auto` |
@@ -230,7 +363,7 @@ python scripts/chatbot_AgriChat_lora.py
 | Constant | Description |
 |----------|-------------|
 | `BASE_MODEL_ID` | HuggingFace model ID for the base model |
-| `ADAPTER_PATH` | Path to the saved LoRA adapter directory |
+| `AGRICHAT_WEIGHTS_PATH` | Path to the AgriChat weights directory |
 | `SERVER_PORT` | Port to serve the Gradio app (default: `7860`) |
 | `SHARE` | Set to `True` to generate a public Gradio share link |
 
@@ -249,10 +382,12 @@ Evaluates model text outputs against ground-truth reference answers using a comp
 
 **Usage:**
 ```bash
+export LONGCLIP_ROOT=/absolute/path/to/Long-CLIP
+
 python scripts/nlg_evaluator.py \
     --model_output ./outputs/model_predictions.jsonl \
     --reference    ./data/test.jsonl \
-    --longclip_ckpt ./checkpoints/longclip-L.pt \
+    --longclip_ckpt $LONGCLIP_ROOT/checkpoints/longclip-L.pt \
     --output_json  ./results/scores.json
 ```
 
@@ -297,26 +432,6 @@ python scripts/llm_judge.py \
 ```
 
 ---
-
-## ⚙️ V2VK Data Generation Pipeline
-
-Scripts to reproduce the Vision-to-Verified-Knowledge pipeline:
-
-```bash
-# Stage I: Visual Grounding (Image Captioning via Gemma 3)
-python scripts/stage1_captioning.py --data_dir ./AgriMM/images --output ./captions.json
-
-# Stage II: Knowledge Retrieval (Web-RAG via Gemini 3 Pro)
-python scripts/stage2_knowledge.py --classes ./AgriMM/classes.json --output ./knowledge.json
-
-# Stage III: Instruction Synthesis (QA Generation via LLaMA 3.1)
-python scripts/stage3_qa_generation.py --captions ./captions.json --knowledge ./knowledge.json --output ./AgriMM_QA.json
-```
-
-> See [Appendix B](/) in the paper for the exact prompt templates used in each stage.
-
----
-
 ## 📊 Evaluation
 
 We employ a multi-faceted evaluation framework combining lexical, semantic, and LLM-based metrics:
@@ -327,12 +442,20 @@ We employ a multi-faceted evaluation framework combining lexical, semantic, and 
 | Semantic | BERTScore, LongCLIP, T5 Cosine, SBERT |
 | LLM-as-a-Judge | Qwen3-30B-A3B-Instruct (4-point Likert scale) |
 
+Use the two provided evaluators directly:
+
 ```bash
-# Run evaluation on a benchmark
-python evaluate.py \
-  --model_path ./checkpoints/agrichat-7b \
-  --benchmark agrimm \
-  --output_dir ./results/
+# Lexical + semantic metrics
+python scripts/nlg_evaluator.py \
+  --model_output ./outputs/model_predictions.jsonl \
+  --reference ./data/test.jsonl \
+  --output_json ./results/nlg_scores.json
+
+# LLM-as-a-Judge
+python scripts/llm_judge.py \
+  --model_output ./outputs/model_predictions.jsonl \
+  --reference ./data/test.jsonl \
+  --output ./results/judged_predictions.jsonl
 ```
 
 ---
@@ -355,7 +478,7 @@ If you find our work useful, please cite:
 
 This project is released under the [Apache 2.0 License](LICENSE).
 
-The AgriMM dataset is released for **research purposes only**. Individual source datasets retain their original licenses — see [Appendix A](/) for the complete source list.
+The AgriMM dataset is released for **research purposes only**. Individual source datasets retain their original licenses; see Appendix A in the paper for the complete source list.
 
 ## 🙏 Acknowledgments
 

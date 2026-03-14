@@ -6,7 +6,8 @@ Inference script for a LoRA fine-tuned LLaVA-OneVision (Qwen2 + SigLIP) model.
 
 OVERVIEW
 --------
-Loads the base LLaVA-OneVision model together with a trained LoRA adapter,
+Loads the base LLaVA-OneVision model together with the released AgriChat
+LoRA weights,
 then runs single-image inference given an image path and a text prompt.
 
 USAGE
@@ -15,12 +16,12 @@ USAGE
     python inference_AgriChat_lora.py \\
         --image  path/to/image.jpg \\
         --prompt "What disease is affecting this crop?" \\
-        --adapter ./finetune_output/final_adapter
+        --agrichat-weights ./weights/AgriChat
 
   In code:
     from inference_AgriChat_lora import load_model, run_inference
 
-    model, processor = load_model(adapter_path="./finetune_output/final_adapter")
+    model, processor = load_model(agrichat_weights_path="./weights/AgriChat")
     response = run_inference(model, processor, image_path="img.jpg", prompt="Describe this image.")
     print(response)
 
@@ -28,7 +29,8 @@ ARGUMENTS (CLI)
 ---------------
   --image       Path to the input image (any format supported by Pillow).
   --prompt      Text prompt / question to ask about the image.
-  --adapter     Path to the saved LoRA adapter directory (default: ./finetune_output/final_adapter).
+  --agrichat-weights
+               Path to the AgriChat LoRA weights directory (default: ./weights/AgriChat).
   --base-model  HuggingFace model ID for the base model (default: llava-hf/llava-onevision-qwen2-7b-ov-hf).
   --max-tokens  Maximum number of new tokens to generate (default: 512).
   --device      Device to run on: "cuda", "cpu", or "auto" (default: auto).
@@ -54,9 +56,9 @@ from peft import PeftModel
 # CONFIG DEFAULTS
 # ============================================================
 
-DEFAULT_BASE_MODEL  = "llava-hf/llava-onevision-qwen2-7b-ov-hf"
-DEFAULT_ADAPTER_DIR = "./models/AgriChat_128_32"
-DEFAULT_MAX_TOKENS  = 512
+DEFAULT_BASE_MODEL = "llava-hf/llava-onevision-qwen2-7b-ov-hf"
+DEFAULT_AGRICHAT_WEIGHTS_DIR = "./weights/AgriChat"
+DEFAULT_MAX_TOKENS = 512
 
 
 # ============================================================
@@ -64,7 +66,7 @@ DEFAULT_MAX_TOKENS  = 512
 # ============================================================
 
 def load_model(
-    adapter_path: str = DEFAULT_ADAPTER_DIR,
+    agrichat_weights_path: str = DEFAULT_AGRICHAT_WEIGHTS_DIR,
     base_model_id: str = DEFAULT_BASE_MODEL,
     device: str = "auto",
 ) -> tuple:
@@ -72,7 +74,7 @@ def load_model(
     Load the base model, merge the LoRA adapter, and return (model, processor).
 
     Args:
-        adapter_path  : Path to the saved PEFT adapter directory.
+        agrichat_weights_path : Path to the AgriChat PEFT weights directory.
         base_model_id : HuggingFace model ID for the base model.
         device        : "auto", "cuda", or "cpu".
 
@@ -90,8 +92,8 @@ def load_model(
         low_cpu_mem_usage=True,
     )
 
-    print(f"Loading LoRA adapter from: {adapter_path}")
-    model = PeftModel.from_pretrained(base_model, adapter_path)
+    print(f"Loading AgriChat weights from: {agrichat_weights_path}")
+    model = PeftModel.from_pretrained(base_model, agrichat_weights_path)
     model.eval()
 
     print("✓ Model ready.\n")
@@ -188,10 +190,19 @@ def _parse_args() -> argparse.Namespace:
         help="Text prompt or question about the image.",
     )
     parser.add_argument(
-        "--adapter",
+        "--agrichat-weights",
         type=str,
-        default=DEFAULT_ADAPTER_DIR,
-        help=f"Path to the LoRA adapter directory (default: {DEFAULT_ADAPTER_DIR}).",
+        default=DEFAULT_AGRICHAT_WEIGHTS_DIR,
+        help=(
+            "Path to the AgriChat weights directory "
+            f"(default: {DEFAULT_AGRICHAT_WEIGHTS_DIR})."
+        ),
+    )
+    parser.add_argument(
+        "--adapter",
+        dest="agrichat_weights",
+        type=str,
+        help=argparse.SUPPRESS,
     )
     parser.add_argument(
         "--base-model",
@@ -219,7 +230,7 @@ def main() -> None:
     args = _parse_args()
 
     model, processor = load_model(
-        adapter_path=args.adapter,
+        agrichat_weights_path=args.agrichat_weights,
         base_model_id=args.base_model,
         device=args.device,
     )

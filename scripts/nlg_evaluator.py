@@ -53,7 +53,9 @@ Example Usage:
 Dependencies:
     pip install nltk rouge-score bert-score sentence-transformers transformers torch scipy scikit-learn tqdm
 
-    LongCLIP requires a custom installation. See: https://github.com/beichenzbc/Long-CLIP
+    LongCLIP requires a separate checkout. Set LONGCLIP_ROOT to that repository
+    if it is not located at ../Long-CLIP relative to this script.
+    See: https://github.com/beichenzbc/Long-CLIP
 ================================================================================
 """
 
@@ -62,6 +64,7 @@ import json
 import logging
 import multiprocessing
 import os
+import sys
 import re
 import warnings
 
@@ -81,6 +84,12 @@ logging.getLogger("bert_score").setLevel(logging.ERROR)
 logging.getLogger("transformers").setLevel(logging.ERROR)
 warnings.filterwarnings("ignore")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_LONGCLIP_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "Long-CLIP"))
+LONGCLIP_ROOT = os.path.abspath(os.environ.get("LONGCLIP_ROOT", DEFAULT_LONGCLIP_ROOT))
+if LONGCLIP_ROOT not in sys.path and os.path.isdir(LONGCLIP_ROOT):
+    sys.path.insert(0, LONGCLIP_ROOT)
 
 # ---------------------------------------------------------------------------
 # NLTK resource bootstrap

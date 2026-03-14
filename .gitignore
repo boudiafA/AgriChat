@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+.DS_Store
+
+auto_annotation_outputs/
+finetune_output/
+outputs/
+results/
