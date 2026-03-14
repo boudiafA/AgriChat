@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="#"><img src="https://img.shields.io/badge/arXiv-Paper-b31b1b.svg" alt="Paper"></a>
-  <a href="https://huggingface.co/boudiafA/AgriChat/tree/main/dataset"><img src="https://img.shields.io/badge/Dataset-AgriMM-87CEEB" alt="Dataset"></a>
+  <a href="https://huggingface.co/boudiafA/AgriChat/tree/main/dataset"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Hugging%20Face-FFD21E" alt="Dataset"></a>
   <a href="https://huggingface.co/boudiafA/AgriChat/tree/main/weights/AgriChat"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Model-Hugging%20Face-FFD21E" alt="Model"></a>
 </p>
 
