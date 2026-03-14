@@ -64,7 +64,7 @@ General-purpose MLLMs lack the verified domain expertise to reason reliably acro
 
 We release the **train** and **test** annotation splits on Hugging Face under the [dataset folder](https://huggingface.co/boudiafA/AgriChat/tree/main/dataset).
 
-The annotations are published there as **ordered JSONL shards** for easier distribution. These files contain **annotations only**. The source images are not redistributed in this repository. Each record references an image path inside a user-created `datasets_sorted/` directory, for example:
+These JSONL files contain **annotations only**. The source images are not redistributed in this repository. Each record references an image path inside a user-created `datasets_sorted/` directory, for example:
 
 ```text
 datasets_sorted\iNatAg_subset\hymenaea_courbaril\280829227.jpg
