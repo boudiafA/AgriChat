@@ -11,14 +11,16 @@
 
 <p align="center">
   <a href="#"><img src="https://img.shields.io/badge/arXiv-Paper-b31b1b.svg" alt="Paper"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Dataset-AgriMM-87CEEB" alt="Dataset"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Model-AgriChat--7B-green" alt="Model"></a>
+  <a href="https://huggingface.co/boudiafA/AgriChat/tree/main/dataset"><img src="https://img.shields.io/badge/Dataset-AgriMM-87CEEB" alt="Dataset"></a>
+  <a href="https://huggingface.co/boudiafA/AgriChat/tree/main/weights/AgriChat"><img src="https://img.shields.io/badge/Model-AgriChat--7B-green" alt="Model"></a>
 </p>
 
 ---
 
 ## 📢 Latest Updates
 
+- **[2026-03-14]**: AgriChat-7B weights released on Hugging Face
+- **[2026-03-14]**: AgriMM train/test annotation splits released on Hugging Face
 - **[2026-02-26]**: AgriChat paper submitted to *Computers and Electronics in Agriculture*
 - **[2026-02-25]**: Repository created
 
