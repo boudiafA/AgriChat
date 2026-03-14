@@ -132,7 +132,7 @@ AgriChat vs. state-of-the-art generalist baselines (METEOR / LLM Judge scores):
 
 ## 🔧 Installation
 
-Most users want to test the model first. Start with the inference environment below, run one image, and only then move to the auto-annotation or evaluation setups if needed.
+Start with the minimal inference setup below, then use the task-specific environments for auto-annotation and evaluation as needed.
 
 ### Quickstart: Inference Only
 
