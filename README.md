@@ -191,6 +191,8 @@ python scripts/inference_AgriChat_lora.py \
     --prompt "What is shown in this image?"
 ```
 
+The default inference preset is `balanced`, which uses light sampling plus repetition penalty to reduce repetitive outputs. If you specifically want fully greedy decoding, add `--decoding-preset strict`.
+
 Very short Python example:
 
 ```python
@@ -428,6 +430,11 @@ python scripts/inference_AgriChat_lora.py \
 | `--agrichat-weights` | Path to the AgriChat weights directory | `./weights/AgriChat` |
 | `--base-model` | HuggingFace base model ID | `llava-hf/llava-onevision-qwen2-7b-ov-hf` |
 | `--max-tokens` | Maximum new tokens to generate | `512` |
+| `--decoding-preset` | Generation preset: `balanced` or `strict` | `balanced` |
+| `--temperature` | Override preset temperature | preset-dependent |
+| `--top-p` | Override preset top-p | preset-dependent |
+| `--top-k` | Override preset top-k | preset-dependent |
+| `--repetition-penalty` | Override preset repetition penalty | preset-dependent |
 | `--device` | Device: `cuda`, `cpu`, or `auto` | `auto` |
 
 ---

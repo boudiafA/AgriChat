@@ -33,6 +33,9 @@ ARGUMENTS (CLI)
                Path to the AgriChat LoRA weights directory (default: ./weights/AgriChat).
   --base-model  HuggingFace model ID for the base model (default: llava-hf/llava-onevision-qwen2-7b-ov-hf).
   --max-tokens  Maximum number of new tokens to generate (default: 512).
+  --decoding-preset
+               Generation preset to use. "balanced" is recommended for better
+               first-run behavior; "strict" keeps fully greedy decoding.
   --device      Device to run on: "cuda", "cpu", or "auto" (default: auto).
 
 REQUIREMENTS
@@ -59,6 +62,24 @@ from peft import PeftModel
 DEFAULT_BASE_MODEL = "llava-hf/llava-onevision-qwen2-7b-ov-hf"
 DEFAULT_AGRICHAT_WEIGHTS_DIR = "./weights/AgriChat"
 DEFAULT_MAX_TOKENS = 512
+DEFAULT_DECODING_PRESET = "balanced"
+
+DECODING_PRESETS = {
+    "balanced": {
+        "do_sample": True,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "top_k": 40,
+        "repetition_penalty": 1.2,
+    },
+    "strict": {
+        "do_sample": False,
+        "temperature": None,
+        "top_p": None,
+        "top_k": None,
+        "repetition_penalty": 1.0,
+    },
+}
 
 
 # ============================================================
@@ -110,6 +131,11 @@ def run_inference(
     image_path: str,
     prompt: str,
     max_new_tokens: int = DEFAULT_MAX_TOKENS,
+    do_sample: bool = DECODING_PRESETS[DEFAULT_DECODING_PRESET]["do_sample"],
+    temperature: float | None = DECODING_PRESETS[DEFAULT_DECODING_PRESET]["temperature"],
+    top_p: float | None = DECODING_PRESETS[DEFAULT_DECODING_PRESET]["top_p"],
+    top_k: int | None = DECODING_PRESETS[DEFAULT_DECODING_PRESET]["top_k"],
+    repetition_penalty: float = DECODING_PRESETS[DEFAULT_DECODING_PRESET]["repetition_penalty"],
 ) -> str:
     """
     Run inference on a single image and text prompt.
@@ -120,6 +146,11 @@ def run_inference(
         image_path     : Path to the input image file.
         prompt         : Text question or instruction about the image.
         max_new_tokens : Maximum number of tokens to generate.
+        do_sample      : Whether to use sampling instead of greedy decoding.
+        temperature    : Sampling temperature.
+        top_p          : Nucleus sampling threshold.
+        top_k          : Top-K sampling cutoff.
+        repetition_penalty : Penalty applied to repeated tokens.
 
     Returns:
         The model's response as a plain string.
@@ -154,12 +185,19 @@ def run_inference(
     inputs = {k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in inputs.items()}
 
     # ---- Generate ----
+    generation_kwargs = {
+        "max_new_tokens": max_new_tokens,
+        "do_sample": do_sample,
+        "repetition_penalty": repetition_penalty,
+        "pad_token_id": processor.tokenizer.pad_token_id,
+    }
+    if do_sample:
+        generation_kwargs["temperature"] = temperature
+        generation_kwargs["top_p"] = top_p
+        generation_kwargs["top_k"] = top_k
+
     with torch.inference_mode():
-        output_ids = model.generate(
-            **inputs,
-            max_new_tokens=max_new_tokens,
-            do_sample=False,
-        )
+        output_ids = model.generate(**inputs, **generation_kwargs)
 
     # ---- Decode (strip the input prompt tokens) ----
     input_len = inputs["input_ids"].shape[1]
@@ -217,6 +255,40 @@ def _parse_args() -> argparse.Namespace:
         help=f"Maximum number of new tokens to generate (default: {DEFAULT_MAX_TOKENS}).",
     )
     parser.add_argument(
+        "--decoding-preset",
+        type=str,
+        choices=sorted(DECODING_PRESETS.keys()),
+        default=DEFAULT_DECODING_PRESET,
+        help=(
+            "Generation preset to use. "
+            f'Default: "{DEFAULT_DECODING_PRESET}" for less repetitive outputs.'
+        ),
+    )
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        default=None,
+        help="Override the preset temperature.",
+    )
+    parser.add_argument(
+        "--top-p",
+        type=float,
+        default=None,
+        help="Override the preset top-p value.",
+    )
+    parser.add_argument(
+        "--top-k",
+        type=int,
+        default=None,
+        help="Override the preset top-k value.",
+    )
+    parser.add_argument(
+        "--repetition-penalty",
+        type=float,
+        default=None,
+        help="Override the preset repetition penalty.",
+    )
+    parser.add_argument(
         "--device",
         type=str,
         default="auto",
@@ -228,6 +300,7 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = _parse_args()
+    preset = DECODING_PRESETS[args.decoding_preset]
 
     model, processor = load_model(
         agrichat_weights_path=args.agrichat_weights,
@@ -245,6 +318,15 @@ def main() -> None:
         image_path=args.image,
         prompt=args.prompt,
         max_new_tokens=args.max_tokens,
+        do_sample=preset["do_sample"],
+        temperature=args.temperature if args.temperature is not None else preset["temperature"],
+        top_p=args.top_p if args.top_p is not None else preset["top_p"],
+        top_k=args.top_k if args.top_k is not None else preset["top_k"],
+        repetition_penalty=(
+            args.repetition_penalty
+            if args.repetition_penalty is not None
+            else preset["repetition_penalty"]
+        ),
     )
 
     print("Response:")
