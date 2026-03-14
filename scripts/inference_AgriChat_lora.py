@@ -35,7 +35,8 @@ ARGUMENTS (CLI)
   --max-tokens  Maximum number of new tokens to generate (default: 512).
   --decoding-preset
                Generation preset to use. "balanced" is recommended for better
-               first-run behavior; "strict" keeps fully greedy decoding.
+               first-run behavior; "strict" keeps fully greedy decoding and
+               matches the evaluation setting used for the paper results.
   --device      Device to run on: "cuda", "cpu", or "auto" (default: auto).
 
 REQUIREMENTS
@@ -261,7 +262,8 @@ def _parse_args() -> argparse.Namespace:
         default=DEFAULT_DECODING_PRESET,
         help=(
             "Generation preset to use. "
-            f'Default: "{DEFAULT_DECODING_PRESET}" for less repetitive outputs.'
+            f'Default: "{DEFAULT_DECODING_PRESET}" for less repetitive outputs. '
+            '"strict" matches the paper evaluation setting.'
         ),
     )
     parser.add_argument(

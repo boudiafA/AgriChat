@@ -120,6 +120,8 @@ AgriChat is adapted for high-precision agricultural diagnostics based on LLaVA-O
 
 AgriChat vs. state-of-the-art generalist baselines (METEOR / LLM Judge scores):
 
+Reported scores in the paper were measured with the `strict` decoding setting. The repository defaults to `balanced` decoding for better first-run interactive behavior.
+
 | Benchmark | LLaVA-OneVision (7B) | Llama-3.2 (11B) | Qwen-2.5 (7B) | **AgriChat (7B)** |
 |-----------|---------------------|-----------------|---------------|-------------------|
 | AgriMM | 37.89 / 55.12 | 32.43 / 57.18 | 29.11 / 65.77 | **66.70 / 77.43** |
@@ -191,7 +193,7 @@ python scripts/inference_AgriChat_lora.py \
     --prompt "What is shown in this image?"
 ```
 
-The default inference preset is `balanced`, which uses light sampling plus repetition penalty to reduce repetitive outputs. If you specifically want fully greedy decoding, add `--decoding-preset strict`.
+The default inference preset is `balanced`, which uses light sampling plus repetition penalty to reduce repetitive outputs. If you want the same fully greedy decoding used for the paper evaluation scores, add `--decoding-preset strict`.
 
 Very short Python example:
 
@@ -430,7 +432,7 @@ python scripts/inference_AgriChat_lora.py \
 | `--agrichat-weights` | Path to the AgriChat weights directory | `./weights/AgriChat` |
 | `--base-model` | HuggingFace base model ID | `llava-hf/llava-onevision-qwen2-7b-ov-hf` |
 | `--max-tokens` | Maximum new tokens to generate | `512` |
-| `--decoding-preset` | Generation preset: `balanced` or `strict` | `balanced` |
+| `--decoding-preset` | Generation preset: `balanced` or `strict` (`strict` matches paper evaluation) | `balanced` |
 | `--temperature` | Override preset temperature | preset-dependent |
 | `--top-p` | Override preset top-p | preset-dependent |
 | `--top-k` | Override preset top-k | preset-dependent |
