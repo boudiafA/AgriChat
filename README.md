@@ -132,48 +132,11 @@ AgriChat vs. state-of-the-art generalist baselines (METEOR / LLM Judge scores):
 
 ## 🔧 Installation
 
-We recommend using **two conda environments**:
+Most users want to test the model first. Start with the inference environment below, run one image, and only then move to the auto-annotation or evaluation setups if needed.
 
-- `agrichat-core` for auto-annotation, fine-tuning, inference, chatbot, and `nlg_evaluator.py`
-- `agrichat-judge` for `llm_judge.py`, because vLLM is best installed in a fresh environment
+### Quickstart: Inference Only
 
-### Environment 1: `agrichat-core`
-
-```bash
-conda create -n agrichat-core python=3.10 -y
-conda activate agrichat-core
-
-# PyTorch with CUDA 12.1
-pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu121
-
-# If you need CUDA 11.8 instead, use:
-# pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu118
-
-pip install --upgrade \
-    transformers accelerate bitsandbytes pillow requests protobuf peft \
-    google-genai gradio tqdm \
-    nltk rouge-score bert-score sentence-transformers scipy scikit-learn
-```
-
-Optional for training:
-```bash
-# The fine-tuning script defaults to flash_attention_2.
-# Install FlashAttention if it matches your CUDA/PyTorch stack, or run training with:
-#   --attn-implementation sdpa
-pip install flash-attn --no-build-isolation
-```
-
-### Environment 2: `agrichat-judge`
-
-```bash
-conda create -n agrichat-judge python=3.10 -y
-conda activate agrichat-judge
-
-# vLLM is recommended in a fresh environment.
-pip install vllm transformers
-```
-
-### Clone Repository
+### Step 1: Clone Repository
 
 ```bash
 git clone https://github.com/boudiafA/AgriChat.git
@@ -181,9 +144,108 @@ cd AgriChat
 export PYTHONPATH="./:$PYTHONPATH"
 ```
 
-### Install Long-CLIP for `nlg_evaluator.py`
+### Step 2: Create the Inference Environment
 
-`nlg_evaluator.py` depends on the official Long-CLIP repository and checkpoint files. Clone the repository separately and point the evaluator to it via `LONGCLIP_ROOT`.
+```bash
+conda create -n agrichat-infer python=3.10 -y
+conda activate agrichat-infer
+
+# PyTorch with CUDA 12.1
+pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu121
+
+# If you need CUDA 11.8 instead, use:
+# pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu118
+
+pip install --upgrade transformers accelerate bitsandbytes pillow protobuf peft
+```
+
+### Step 3: Place AgriChat Weights
+
+```bash
+weights/AgriChat/
+├── adapter_config.json
+└── adapter_model.safetensors
+```
+
+The repository does **not** include `adapter_model.safetensors` because the model weights are too large for a normal GitHub code release. Download the published weights from the model link above and place them in this folder.
+
+### Step 4: Run a Minimal Inference Example
+
+```bash
+python scripts/inference_AgriChat_lora.py \
+    --image path/to/image.jpg \
+    --prompt "What is shown in this image?"
+```
+
+Very short Python example:
+
+```python
+from scripts.inference_AgriChat_lora import load_model, run_inference
+
+model, processor = load_model()
+response = run_inference(
+    model=model,
+    processor=processor,
+    image_path="path/to/image.jpg",
+    prompt="What is shown in this image?",
+)
+print(response)
+```
+
+### Task-Specific Environments
+
+We recommend keeping the rest of the tooling isolated in separate environments:
+
+- `agrichat-infer` for inference and the chatbot
+- `agrichat-autoanno` for the auto-annotation pipeline
+- `agrichat-eval` for `nlg_evaluator.py`
+- `agrichat-judge` for `llm_judge.py`
+
+### Environment 1: `agrichat-infer`
+
+Use this for:
+- `scripts/inference_AgriChat_lora.py`
+- `scripts/chatbot_AgriChat_lora.py`
+
+```bash
+conda create -n agrichat-infer python=3.10 -y
+conda activate agrichat-infer
+
+pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu121
+pip install --upgrade transformers accelerate bitsandbytes pillow protobuf peft gradio
+```
+
+### Environment 2: `agrichat-autoanno`
+
+Use this for:
+- `scripts/auto_annotation_pipeline.py`
+
+This environment can reuse the same stack as `agrichat-infer`, but a separate environment keeps API and pipeline dependencies isolated.
+
+```bash
+conda create -n agrichat-autoanno python=3.10 -y
+conda activate agrichat-autoanno
+
+pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu121
+pip install --upgrade transformers accelerate bitsandbytes pillow protobuf peft google-genai tqdm
+```
+
+### Environment 3: `agrichat-eval`
+
+Use this for:
+- `scripts/nlg_evaluator.py`
+
+```bash
+conda create -n agrichat-eval python=3.10 -y
+conda activate agrichat-eval
+
+pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu121
+pip install --upgrade \
+    transformers pillow tqdm \
+    nltk rouge-score bert-score sentence-transformers scipy scikit-learn
+```
+
+Install Long-CLIP separately for `nlg_evaluator.py`:
 
 ```bash
 git clone https://github.com/beichenzbc/Long-CLIP.git ../Long-CLIP
@@ -198,17 +260,25 @@ $LONGCLIP_ROOT/checkpoints/
 
 If `LONGCLIP_ROOT` is not set, the evaluator falls back to `../Long-CLIP` relative to this repository layout.
 
-### Place AgriChat Weights
+### Environment 4: `agrichat-judge`
 
-Place the released AgriChat PEFT weights under:
+Use this for:
+- `scripts/llm_judge.py`
 
 ```bash
-weights/AgriChat/
-├── adapter_config.json
-└── adapter_model.safetensors
+conda create -n agrichat-judge python=3.10 -y
+conda activate agrichat-judge
+
+pip install vllm transformers
 ```
 
-The repository does **not** include `adapter_model.safetensors` because the model weights are too large for a normal GitHub code release. Download the published weights from the model link above and place them in this folder. The inference and chatbot scripts default to this location.
+Optional for training:
+```bash
+# The fine-tuning script defaults to flash_attention_2.
+# Install FlashAttention if it matches your CUDA/PyTorch stack, or run training with:
+#   --attn-implementation sdpa
+pip install flash-attn --no-build-isolation
+```
 
 ---
 
