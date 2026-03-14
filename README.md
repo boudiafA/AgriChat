@@ -60,6 +60,18 @@ General-purpose MLLMs lack the verified domain expertise to reason reliably acro
 
 **AgriMM** consolidates **63 source datasets** into a unified benchmark of **121,425 images** and **607,125 instruction-following QA pairs**. It is the first publicly available, multi-source agricultural VQA benchmark integrating fine-grained taxonomy, counting, and web-verified knowledge.
 
+### Annotation Release
+
+We release the **train** and **test** annotation splits on Hugging Face under the [dataset folder](https://huggingface.co/boudiafA/AgriChat/tree/main/dataset).
+
+The annotations are published there as **ordered JSONL shards** for easier distribution. These files contain **annotations only**. The source images are not redistributed in this repository. Each record references an image path inside a user-created `datasets_sorted/` directory, for example:
+
+```text
+datasets_sorted\iNatAg_subset\hymenaea_courbaril\280829227.jpg
+```
+
+Users must download the original source datasets listed in Appendix A of the paper and recreate the corresponding dataset folders under `datasets_sorted/`.
+
 ### Dataset Components
 
 | Component | Images | Classes | Description |
@@ -80,7 +92,7 @@ Our pipeline ensures scientific accuracy through three stages:
 
 | Resource | Link |
 |----------|------|
-| AgriMM Dataset | **Coming Soon** |
+| AgriMM Train/Test Annotations (JSONL only) | [Hugging Face - dataset folder](https://huggingface.co/boudiafA/AgriChat/tree/main/dataset) |
 | Source Dataset List | See Appendix A in the paper |
 
 ---
@@ -126,7 +138,7 @@ AgriChat vs. state-of-the-art generalist baselines (METEOR / LLM Judge scores):
 
 | Model | Base | Link |
 |-------|------|------|
-| AgriChat-7B | LLaVA-OneVision / Qwen-2-7B | **Coming Soon** ([Model Weights Placeholder](#)) |
+| AgriChat-7B | LLaVA-OneVision / Qwen-2-7B | [Hugging Face - model weights](https://huggingface.co/boudiafA/AgriChat/tree/main/weights/AgriChat) |
 
 ---
 
