@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/arXiv-Paper-b31b1b.svg" alt="Paper"></a>
+  <a href="https://arxiv.org/abs/2603.16934"><img src="https://img.shields.io/badge/arXiv-Paper-b31b1b.svg" alt="Paper"></a>
   <a href="https://huggingface.co/boudiafA/AgriChat/tree/main/dataset"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Hugging%20Face-FFD21E" alt="Dataset"></a>
   <a href="https://huggingface.co/boudiafA/AgriChat/tree/main/weights/AgriChat"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Model-Hugging%20Face-FFD21E" alt="Model"></a>
 </p>
@@ -21,7 +21,7 @@
 
 - **[2026-03-14]**: AgriChat-7B weights released on Hugging Face
 - **[2026-03-14]**: AgriMM train/test annotation splits released on Hugging Face
-- **[2026-02-26]**: AgriChat paper submitted to *Computers and Electronics in Agriculture*
+- **[2026-03-19]**: AgriChat paper released on arXiv: [2603.16934](https://arxiv.org/abs/2603.16934)
 - **[2026-02-25]**: Repository created
 
 ---
@@ -557,11 +557,14 @@ python scripts/llm_judge.py \
 
 If you find our work useful, please cite:
 ```bibtex
-@article{boudiaf2026agrichat,
-  title     = {AgriChat: A Multimodal Large Language Model for Agriculture Image Understanding},
-  author    = {Boudiaf, Abderrahmene and Hussain, Irfan and Javed, Sajid},
-  journal   = {Submitted to Computers and Electronics in Agriculture},
-  year      = {2026}
+@misc{boudiaf2026agrichatmultimodallargelanguage,
+      title={AgriChat: A Multimodal Large Language Model for Agriculture Image Understanding}, 
+      author={Abderrahmene Boudiaf and Irfan Hussain and Sajid Javed},
+      year={2026},
+      eprint={2603.16934},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2603.16934}, 
 }
 ```
 
