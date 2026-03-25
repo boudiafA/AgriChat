@@ -19,9 +19,9 @@
 
 ## 📢 Latest Updates
 
+- **[2026-03-19]**: AgriChat paper released on arXiv: [2603.16934](https://arxiv.org/abs/2603.16934)
 - **[2026-03-14]**: AgriChat-7B weights released on Hugging Face
 - **[2026-03-14]**: AgriMM train/test annotation splits released on Hugging Face
-- **[2026-03-19]**: AgriChat paper released on arXiv: [2603.16934](https://arxiv.org/abs/2603.16934)
 - **[2026-02-25]**: Repository created
 
 ---
