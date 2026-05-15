@@ -16,12 +16,12 @@ USAGE
     python inference_AgriChat_lora.py \\
         --image  path/to/image.jpg \\
         --prompt "What disease is affecting this crop?" \\
-        --agrichat-weights ./weights/AgriChat
+        --agrichat-weights boudiafA/AgriChat
 
   In code:
     from inference_AgriChat_lora import load_model, run_inference
 
-    model, processor = load_model(agrichat_weights_path="./weights/AgriChat")
+    model, processor = load_model(agrichat_weights_path="boudiafA/AgriChat")
     response = run_inference(model, processor, image_path="img.jpg", prompt="Describe this image.")
     print(response)
 
@@ -30,7 +30,8 @@ ARGUMENTS (CLI)
   --image       Path to the input image (any format supported by Pillow).
   --prompt      Text prompt / question to ask about the image.
   --agrichat-weights
-               Path to the AgriChat LoRA weights directory (default: ./weights/AgriChat).
+               Hugging Face repo ID or local AgriChat adapter directory
+               (default: boudiafA/AgriChat).
   --base-model  HuggingFace model ID for the base model (default: llava-hf/llava-onevision-qwen2-7b-ov-hf).
   --max-tokens  Maximum number of new tokens to generate (default: 512).
   --decoding-preset
@@ -61,7 +62,7 @@ from peft import PeftModel
 # ============================================================
 
 DEFAULT_BASE_MODEL = "llava-hf/llava-onevision-qwen2-7b-ov-hf"
-DEFAULT_AGRICHAT_WEIGHTS_DIR = "./weights/AgriChat"
+DEFAULT_AGRICHAT_WEIGHTS_DIR = "boudiafA/AgriChat"
 DEFAULT_MAX_TOKENS = 512
 DEFAULT_DECODING_PRESET = "balanced"
 
@@ -96,7 +97,7 @@ def load_model(
     Load the base model, merge the LoRA adapter, and return (model, processor).
 
     Args:
-        agrichat_weights_path : Path to the AgriChat PEFT weights directory.
+        agrichat_weights_path : Hugging Face repo ID or local AgriChat PEFT adapter directory.
         base_model_id : HuggingFace model ID for the base model.
         device        : "auto", "cuda", or "cpu".
 
@@ -114,7 +115,7 @@ def load_model(
         low_cpu_mem_usage=True,
     )
 
-    print(f"Loading AgriChat weights from: {agrichat_weights_path}")
+    print(f"Loading AgriChat adapter from: {agrichat_weights_path}")
     model = PeftModel.from_pretrained(base_model, agrichat_weights_path)
     model.eval()
 
@@ -233,7 +234,7 @@ def _parse_args() -> argparse.Namespace:
         type=str,
         default=DEFAULT_AGRICHAT_WEIGHTS_DIR,
         help=(
-            "Path to the AgriChat weights directory "
+            "Hugging Face repo ID or local AgriChat adapter directory "
             f"(default: {DEFAULT_AGRICHAT_WEIGHTS_DIR})."
         ),
     )

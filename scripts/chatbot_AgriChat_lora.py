@@ -23,7 +23,7 @@ CONFIGURATION (edit constants below)
 --------------------------------------
   BASE_MODEL_ID   : HuggingFace model ID for the base model.
   AGRICHAT_WEIGHTS_PATH
-                  : Path to the released AgriChat LoRA weights directory.
+                  : Hugging Face repo ID or local AgriChat LoRA adapter directory.
   SERVER_PORT     : Port to serve the Gradio app on (default: 7860).
   SHARE           : Set to True to generate a public Gradio share link.
 
@@ -61,7 +61,7 @@ from peft import PeftModel
 # ============================================================
 
 BASE_MODEL_ID = "llava-hf/llava-onevision-qwen2-7b-ov-hf"
-AGRICHAT_WEIGHTS_PATH = "./weights/AgriChat"
+AGRICHAT_WEIGHTS_PATH = "boudiafA/AgriChat"
 MAX_NEW_TOKENS = 512
 SERVER_PORT    = 7860
 SHARE          = False
@@ -110,7 +110,7 @@ def _load_model_and_processor():
     )
 
     # ---- LoRA adapter ----
-    print(f"[3/3] Loading AgriChat weights from: {AGRICHAT_WEIGHTS_PATH}")
+    print(f"[3/3] Loading AgriChat adapter from: {AGRICHAT_WEIGHTS_PATH}")
     model = PeftModel.from_pretrained(base_model, AGRICHAT_WEIGHTS_PATH)
     model.eval()
 

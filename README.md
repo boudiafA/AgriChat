@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://arxiv.org/abs/2603.16934"><img src="https://img.shields.io/badge/arXiv-Paper-b31b1b.svg" alt="Paper"></a>
   <a href="https://huggingface.co/boudiafA/AgriChat/tree/main/dataset"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Hugging%20Face-FFD21E" alt="Dataset"></a>
-  <a href="https://huggingface.co/boudiafA/AgriChat/tree/main/weights/AgriChat"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Model-Hugging%20Face-FFD21E" alt="Model"></a>
+  <a href="https://huggingface.co/boudiafA/AgriChat"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Model-Hugging%20Face-FFD21E" alt="Model"></a>
 </p>
 
 ---
@@ -142,7 +142,7 @@ Reported scores in the paper were measured with the `strict` decoding setting. T
 
 | Model | Base | Link |
 |-------|------|------|
-| AgriChat-7B | LLaVA-OneVision / Qwen-2-7B | [Hugging Face - model weights](https://huggingface.co/boudiafA/AgriChat/tree/main/weights/AgriChat) |
+| AgriChat-7B | LLaVA-OneVision / Qwen-2-7B | [Hugging Face - PEFT adapter](https://huggingface.co/boudiafA/AgriChat) |
 
 ---
 
@@ -175,15 +175,15 @@ pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https
 pip install --upgrade transformers accelerate bitsandbytes pillow protobuf peft
 ```
 
-### Step 3: Place AgriChat Weights
+### Step 3: AgriChat Adapter
 
-```bash
-weights/AgriChat/
-├── adapter_config.json
-└── adapter_model.safetensors
+The inference scripts load the published PEFT adapter directly from Hugging Face by default:
+
+```text
+boudiafA/AgriChat
 ```
 
-The repository does **not** include `adapter_model.safetensors` because the model weights are too large for a normal GitHub code release. Download the published weights from the model link above and place them in this folder.
+For offline use, you can download `adapter_config.json` and `adapter_model.safetensors` from the model link above and pass that local directory with `--agrichat-weights`.
 
 ### Step 4: Run a Minimal Inference Example
 
@@ -413,14 +413,14 @@ torchrun --nproc_per_node=<N_GPUS> scripts/finetune_AgriChat_lora.py \
 
 ### `inference_AgriChat_lora.py` — Single-Image Inference
 
-Loads the base LLaVA-OneVision model with the released AgriChat weights and runs single-image inference given an image path and a text prompt.
+Loads the base LLaVA-OneVision model with the released AgriChat PEFT adapter and runs single-image inference given an image path and a text prompt.
 
 **Usage:**
 ```bash
 python scripts/inference_AgriChat_lora.py \
     --image  path/to/image.jpg \
     --prompt "What disease is affecting this crop?" \
-    --agrichat-weights ./weights/AgriChat
+    --agrichat-weights boudiafA/AgriChat
 ```
 
 **CLI Arguments:**
@@ -429,7 +429,7 @@ python scripts/inference_AgriChat_lora.py \
 |----------|-------------|---------|
 | `--image` | Path to the input image | required |
 | `--prompt` | Text question to ask about the image | required |
-| `--agrichat-weights` | Path to the AgriChat weights directory | `./weights/AgriChat` |
+| `--agrichat-weights` | Hugging Face repo ID or local AgriChat adapter directory | `boudiafA/AgriChat` |
 | `--base-model` | HuggingFace base model ID | `llava-hf/llava-onevision-qwen2-7b-ov-hf` |
 | `--max-tokens` | Maximum new tokens to generate | `512` |
 | `--decoding-preset` | Generation preset: `balanced` or `strict` (`strict` matches paper evaluation) | `balanced` |
@@ -456,7 +456,7 @@ python scripts/chatbot_AgriChat_lora.py
 | Constant | Description |
 |----------|-------------|
 | `BASE_MODEL_ID` | HuggingFace model ID for the base model |
-| `AGRICHAT_WEIGHTS_PATH` | Path to the AgriChat weights directory |
+| `AGRICHAT_WEIGHTS_PATH` | Hugging Face repo ID or local AgriChat adapter directory |
 | `SERVER_PORT` | Port to serve the Gradio app (default: `7860`) |
 | `SHARE` | Set to `True` to generate a public Gradio share link |
 
