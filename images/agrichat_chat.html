@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AgriChat Demo Capture</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── Fixed canvas: 600×480 — ideal for GIF capture ── */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:    #0a0e17;
+    --bg2:   #0f1520;
+    --bg3:   #141c2e;
+    --green: #2ecc71;
+    --blue:  #4a9eff;
+    --text:  #e8edf5;
+    --dim:   #7a8a9e;
+    --border: rgba(255,255,255,0.08);
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  html, body {
+    width: 600px;
+    height: 480px;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: var(--sans);
+  }
+
+  /* ── Card ── */
+  .card {
+    width: 600px;
+    height: 480px;
+    background: var(--bg2);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Progress bar ── */
+  .progress-track {
+    height: 3px;
+    background: rgba(255,255,255,0.05);
+    flex-shrink: 0;
+  }
+  .progress-fill {
+    height: 3px;
+    background: var(--green);
+    width: 0%;
+    border-radius: 0 2px 2px 0;
+    transition: width 0.25s linear;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: rgba(46,204,113,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; flex-shrink: 0;
+  }
+  .header-info { flex: 1; }
+  .header-name {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    letter-spacing: 0.01em;
+  }
+  .header-status {
+    font-size: 11px; color: var(--dim);
+    display: flex; align-items: center; gap: 4px; margin-top: 1px;
+  }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px rgba(46,204,113,0.6);
+  }
+  .header-right {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .pill {
+    font-family: var(--mono);
+    font-size: 10.5px; font-weight: 500;
+    padding: 4px 12px; border-radius: 100px;
+    background: rgba(46,204,113,0.1);
+    color: var(--green);
+    border: 1px solid rgba(46,204,113,0.25);
+    letter-spacing: 0.04em;
+    transition: opacity 0.3s;
+  }
+  .pips { display: flex; gap: 6px; align-items: center; }
+  .pip {
+    width: 7px; height: 7px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: transparent;
+    transition: background 0.4s, border-color 0.4s;
+  }
+  .pip.on { background: var(--green); border-color: var(--green); }
+
+  /* ── Chat window ── */
+  .chat {
+    flex: 1;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  /* ── Image block ── */
+  .scene-img-wrap {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .scene-img-wrap.show { opacity: 1; transform: scale(1); }
+  .scene-img {
+    width: 100%;
+    max-height: 148px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    display: block;
+  }
+  .emoji-img {
+    width: 100%; padding: 16px;
+    text-align: center; font-size: 52px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+  }
+
+  /* ── Message rows ── */
+  .row {
+    display: flex; align-items: flex-end; gap: 8px;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 0.4s cubic-bezier(.4,0,.2,1),
+                transform 0.4s cubic-bezier(.4,0,.2,1);
+  }
+  .row.show { opacity: 1; transform: translateY(0); }
+  .row.user { justify-content: flex-end; }
+  .row.bot  { justify-content: flex-start; }
+
+  .msg-av {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(46,204,113,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+  }
+
+  .bubble {
+    max-width: 78%;
+    padding: 9px 13px;
+    font-size: 12.5px;
+    line-height: 1.65;
+    border: 1px solid var(--border);
+  }
+  .bubble.bot  {
+    border-radius: 4px 13px 13px 13px;
+    background: var(--bg3); color: var(--text);
+  }
+  .bubble.user {
+    border-radius: 13px 4px 13px 13px;
+    background: rgba(74,158,255,0.14);
+    color: #a8d4ff;
+    border-color: rgba(74,158,255,0.2);
+  }
+
+  /* ── Typing indicator ── */
+  .typing-dots {
+    display: flex; gap: 5px; align-items: center;
+    padding: 10px 14px;
+  }
+  .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    transition: background 0.2s;
+  }
+
+  /* ── Fade overlay for scene transitions ── */
+  .fade-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg2);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.45s ease;
+    z-index: 10;
+    border-radius: 16px;
+  }
+  .fade-overlay.on { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="progress-track"><div class="progress-fill" id="prog"></div></div>
+
+  <div class="header">
+    <div class="avatar">🌱</div>
+    <div class="header-info">
+      <div class="header-name">AgriChat</div>
+      <div class="header-status">
+        <span class="status-dot"></span>
+        Agricultural AI Assistant
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="pill" id="pill">Plant Species ID</div>
+      <div class="pips" id="pips"></div>
+    </div>
+  </div>
+
+  <div class="chat" id="chat"></div>
+</div>
+
+<div class="fade-overlay" id="fade"></div>
+
+<script>
+const SCENARIOS = [
+  {
+    label: "Plant Species ID",
+    img:   "assets/ChatBot_1.png",
+    emoji: "🌿",
+    alt:   "Globe artichoke plant",
+    msgs: [
+      { r:"user", t:"Based on the plant's visible features and its surrounding environment, identify the most likely plant species." },
+      { r:"bot",  t:"The plant is <b>Cynara scolymus</b>, commonly known as the globe artichoke, a cultivated variety of <em>Cynara cardunculus</em>." },
+      { r:"user", t:"What is its native range?" },
+      { r:"bot",  t:"Its native range is the <b>Mediterranean region</b>." },
+    ]
+  },
+  {
+    label: "Disease Detection",
+    img:   "assets/ChatBot_2.png",
+    emoji: "🍌",
+    alt:   "Banana leaf with disease",
+    msgs: [
+      { r:"user", t:"Given this image of a banana leaf, determine whether the plant appears healthy or unhealthy." },
+      { r:"bot",  t:"The plant appears <b>unhealthy</b> — brown spots with yellow halos indicate <b>Sigatoka disease</b> caused by <b><em>Mycosphaerella fijiensis</em></b>." },
+    ]
+  },
+  {
+    label: "Fruit Ripeness",
+    img:   "assets/ChatBot_3.png",
+    emoji: "🥭",
+    alt:   "Mango tree with fruits",
+    msgs: [
+      { r:"user", t:"Analyze the visible mangos and estimate the total number and ripeness level of each." },
+      { r:"bot",  t:"The image shows a <b>tree with nine mangos</b>, likely <b>ripe or nearly ripe</b> — colors range from <b>green to orange-yellow</b> hues." },
+    ]
+  }
+];
+
+const TYPING_MS = 900;
+const MSG_GAP   = 520;
+const PAUSE_END = 2800;
+const FADE_MS   = 450;
+
+let cur = 0, timers = [], dotInt = null, progRaf = null, progStart = null, progDur = 0;
+
+function af(fn, d) { timers.push(setTimeout(fn, d)); }
+function clr() { timers.forEach(clearTimeout); timers = []; stopDots(); cancelAnimationFrame(progRaf); }
+
+// ── Pips ─────────────────────────────────────────────────
+function makePips() {
+  const c = document.getElementById('pips'); c.innerHTML = '';
+  SCENARIOS.forEach((_, i) => {
+    const p = document.createElement('div');
+    p.className = 'pip' + (i === cur ? ' on' : '');
+    c.appendChild(p);
+  });
+}
+function updatePips() {
+  document.querySelectorAll('.pip').forEach((p,i) => p.classList.toggle('on', i === cur));
+}
+
+// ── Progress bar ─────────────────────────────────────────
+function startProgress(dur) {
+  const bar = document.getElementById('prog');
+  bar.style.transition = 'none'; bar.style.width = '0%';
+  progDur = dur; progStart = performance.now();
+  function tick(now) {
+    const pct = Math.min((now - progStart) / progDur * 100, 100);
+    bar.style.width = pct + '%';
+    if (pct < 100) progRaf = requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+// ── Pill label ───────────────────────────────────────────
+function setLabel(txt) {
+  const el = document.getElementById('pill');
+  el.style.opacity = '0';
+  setTimeout(() => { el.textContent = txt; el.style.opacity = '1'; }, 250);
+}
+
+// ── Image block ──────────────────────────────────────────
+function makeImageBlock(src, emoji, alt) {
+  const wrap = document.createElement('div');
+  wrap.className = 'scene-img-wrap';
+  const img = document.createElement('img');
+  img.className = 'scene-img'; img.alt = alt; img.src = src;
+  img.onerror = () => {
+    img.remove();
+    const fb = document.createElement('div');
+    fb.className = 'emoji-img'; fb.textContent = emoji;
+    wrap.appendChild(fb);
+  };
+  wrap.appendChild(img);
+  return wrap;
+}
+
+// ── Typing dots ──────────────────────────────────────────
+function makeTypingRow() {
+  const row = document.createElement('div');
+  row.className = 'row bot'; row.id = 'typing-row';
+  row.innerHTML = `<div class="msg-av">🌱</div>
+    <div class="bubble bot">
+      <div class="typing-dots">
+        <div class="dot" id="d0"></div>
+        <div class="dot" id="d1"></div>
+        <div class="dot" id="d2"></div>
+      </div>
+    </div>`;
+  return row;
+}
+function startDots() {
+  let i = 0;
+  dotInt = setInterval(() => {
+    [0,1,2].forEach(idx => {
+      const d = document.getElementById('d'+idx);
+      if (d) d.style.background = idx === i%3
+        ? 'var(--green)' : 'rgba(255,255,255,0.2)';
+    }); i++;
+  }, 280);
+}
+function stopDots() { if (dotInt) { clearInterval(dotInt); dotInt = null; } }
+
+// ── Message bubble ───────────────────────────────────────
+function makeBubble(role, html) {
+  const row = document.createElement('div');
+  row.className = 'row ' + role;
+  if (role === 'bot') {
+    row.innerHTML = `<div class="msg-av">🌱</div>
+      <div class="bubble bot">${html}</div>`;
+  } else {
+    row.innerHTML = `<div class="bubble user">${html}</div>`;
+  }
+  return row;
+}
+
+function reveal(el) {
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+}
+
+// ── Fade transition ──────────────────────────────────────
+function fadeOut(cb) {
+  const ov = document.getElementById('fade');
+  ov.classList.add('on');
+  setTimeout(() => {
+    cb();
+    setTimeout(() => ov.classList.remove('on'), 60);
+  }, FADE_MS);
+}
+
+// ── Main loop ────────────────────────────────────────────
+function run() {
+  const s   = SCENARIOS[cur];
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+  setLabel(s.label);
+  updatePips();
+
+  // Calc total duration
+  let dur = 300;
+  s.msgs.forEach(m => {
+    dur += MSG_GAP;
+    if (m.r === 'bot') dur += TYPING_MS + 300;
+    else dur += 200;
+  });
+  dur += PAUSE_END + FADE_MS;
+  startProgress(dur - FADE_MS);
+
+  // Image
+  const imgBlock = makeImageBlock(s.img, s.emoji, s.alt);
+  chat.appendChild(imgBlock);
+  af(() => imgBlock.classList.add('show'), 80);
+
+  let c = 300;
+
+  s.msgs.forEach(msg => {
+    c += MSG_GAP;
+    if (msg.r === 'user') {
+      af(() => {
+        const b = makeBubble('user', msg.t);
+        chat.appendChild(b); reveal(b);
+        chat.scrollTop = chat.scrollHeight;
+      }, c);
+      c += 200;
+    } else {
+      af(() => {
+        const ty = makeTypingRow();
+        chat.appendChild(ty); reveal(ty);
+        startDots();
+        chat.scrollTop = chat.scrollHeight;
+      }, c);
+      c += TYPING_MS;
+      af(() => {
+        stopDots();
+        const ty = document.getElementById('typing-row');
+        if (ty) { ty.classList.remove('show'); setTimeout(() => ty.remove(), 300); }
+        setTimeout(() => {
+          const b = makeBubble('bot', msg.t);
+          chat.appendChild(b); reveal(b);
+          chat.scrollTop = chat.scrollHeight;
+        }, 280);
+      }, c);
+      c += 300;
+    }
+  });
+
+  c += PAUSE_END;
+  af(() => {
+    fadeOut(() => {
+      clr();
+      cur = (cur + 1) % SCENARIOS.length;
+      run();
+    });
+  }, c);
+}
+
+makePips();
+run();
+</script>
+</body>
+</html>
